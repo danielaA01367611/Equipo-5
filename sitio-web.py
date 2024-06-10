@@ -1,5 +1,7 @@
 import streamlit as st
 from PIL import Image
+import pandas as pd
+from io import StringIO
 
 st.set_page_config(page_title='TDR transportes', page_icon='🚚', layout='wide')
 email_contact = 'tu_correo@example.com'
@@ -49,6 +51,7 @@ with st.container():
     with animation_column:
         st.empty()
 
+#botón de email
 with st.container():
     st.write('---')
     st.header('¿Qué deseas realizar?')
@@ -57,7 +60,7 @@ with st.container():
     <form action='https://formsubmit.co/{email_contact}' method='POST'>
     <input type='text' name='name' placeholder='Tu nombre' required>
     <input type='email' name='email' placeholder='Tu email' required>
-    <textarea type='email' name='message' placeholder='Tu mensaje aqui' required><textarea>
+    <textarea type='email' name='message' placeholder='Tu mensaje aqui' required></textarea>
     <button type='submit'>Enviar</button>
     </from>
     """
@@ -66,6 +69,43 @@ with st.container():
         st.markdown(contact_form, unsafe_allow_html=True)
     with rigth_column:
         st.empty()
+
+#subir archivos
+
+def check_date_format(date_str):
+    try:
+        pd.to_datetime(date_str, format='%Y-%m-%d')
+        return True
+    except ValueError:
+        return False
+
+# Función principal para la aplicación de Streamlit
+with st.container():
+    st.write('---')
+    st.header('¿Qué deseas realizar?')
+    st.write('##')
+
+    # Widget para subir archivo
+    uploaded_file = st.file_uploader("Sube tu archivo CSV", type=["csv"])
+
+    if uploaded_file is not None:
+        # Leer el archivo CSV
+        file_content = StringIO(uploaded_file.getvalue().decode("utf-8"))
+        df = pd.read_csv(file_content)
+
+        # Mostrar el DataFrame cargado
+        st.write("Archivo cargado:")
+        st.dataframe(df)
+
+        # Verificar formato de las fechas
+        date_column = st.selectbox("Selecciona la columna de fecha", df.columns)
+        df["Valid_Date_Format"] = df[date_column].apply(check_date_format)
+
+        if df["Valid_Date_Format"].all():
+            st.success("Todas las fechas tienen el formato correcto (YYYY-MM-DD).")
+        else:
+            st.error("Algunas fechas no tienen el formato correcto (YYYY-MM-DD).")
+            st.write(df[~df["Valid_Date_Format"]])
 
 #servicios
 

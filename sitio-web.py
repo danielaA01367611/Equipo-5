@@ -49,11 +49,22 @@ with st.container():
     with animation_column:
         st.empty()
 
+with st.container():
+    st.write('---')
+    st.header('¿Qué deseas realizar?')
+    st.write('##')
+    contact_from=f"""
+    
+
 #servicios
 
 with st.container():
     st.write('---')
     st.header('Servicios')
+    st.write('')
+
+with st.container():
+    st.write('---')
     st.write('')
     image_column, text_column=st.columns((2,1))
     with image_column:
@@ -86,5 +97,26 @@ with st.container():
             Estos gráficos facilitan la identificación visual de casos extraordinarios,
             permitiendo analizar qué ocurrió, cómo solucionarlo y,
             sobre todo, cómo prevenir que vuelva a suceder.
+            """
+        )
+
+with st.container():
+    st.write('---')
+    st.write('')
+    image_column, text_column=st.columns((2,1))
+    with image_column:
+        image= Image.open('imagenes/ruta.png')
+        st.image(image, use_column_width=True)
+    with text_column:
+        st.subheader('Ruta')
+        st.write(
+            """
+            Visualización detallada de las rutas de cada orden, en este apartado se analizan los
+            trayectos específicos desde el punto de partida hasta el destino, 
+            incluyendo la duración del viaje y el costo asociado. 
+            Esta información te permitirá evaluar la eficiencia de las rutas, 
+            identificar posibles áreas de mejora y optimizar los costos operativos. 
+            Además, podrás comparar diferentes rutas para encontrar las más rápidas y económicas, 
+            contribuyendo a una gestión más eficaz y rentable de las operaciones logísticas.
             """
         )

@@ -5,10 +5,20 @@ st.set_page_config(page_title='TDR transportes', page_icon='🚚', layout='wide'
 
 #inicio
 with st.container():
+    def crop_image(image_path, crop_box):
+        image = Image.open(image_path)
+        cropped_image = image.crop(crop_box)
+        return cropped_image
+    
+    header_image_path = 'imagenes/TDR 2.jpeg'
+    crop_box = (50, 300, 800, 500)  # Ajusta estos valores según sea necesario (left, upper, right, lower)
+    header_image = crop_image(header_image_path, crop_box)
+    st.image(header_image, use_column_width=True)
     st.header('TDR transportes portal del pago de casetas 🚚')
     st.title('La grandeza de TDR es gracias a la grandeza de su gente')
-    st.write('Somos TDR, trabajando siempre en la creación e implementación de soluciones integrales de transporte, rentables, eficientes e innovadoras')
-    st.write('[Saber más >] (https://www.tdr.com.mx/cultura.html)')
+    st.write('Somos TDR, trabajando siempre en la creación e implementación de soluciones integrales de transporte, rentables, eficientes e innovadoras.')
+    st.write('[Saber más >] (https://www.tdr.com.mx/index.html)')
+
 
 #¿que quieres realizar?
 
@@ -47,29 +57,34 @@ with st.container():
     st.write('')
     image_column, text_column=st.columns((2,1))
     with image_column:
-        image= Image.open('images/TDR1.jpeg')
+        image= Image.open('imagenes/tabla.png')
         st.image(image, use_column_width=True)
     with text_column:
         st.subheader('Dataframe registro de ordenes')
         st.write(
-            """"
-            Detalle de cada orden
+            """
+            En el siguiente apartado podrás visualizar en detalle cada orden,
+            incluyendo su fecha de inicio y finalización, lugar de partida y destino,
+            número del camión que realizó la orden, etiqueta registrada en la caseta,
+            proveedor, monto total pagado y monto total presupuestado.
             """
         )
     
 
 with st.container():
     st.write('---')
-    st.header('Servicios')
     st.write('')
     image_column, text_column=st.columns((2,1))
     with image_column:
-        image= Image.open('imagenes/sitio-web.png')
+        image= Image.open('imagenes/graficas.png')
         st.image(image, use_column_width=True)
     with text_column:
-        st.subheader('Dataframe registro de ordenes')
+        st.subheader('Gráficos')
         st.write(
-            """"
-            Detalle de cada orden
+            """
+            En este apartado puedes visualizar gráficos que muestran los resultados del mes de operaciones de TDR.
+            Estos gráficos facilitan la identificación visual de casos extraordinarios,
+            permitiendo analizar qué ocurrió, cómo solucionarlo y,
+            sobre todo, cómo prevenir que vuelva a suceder.
             """
         )

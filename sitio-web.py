@@ -2,7 +2,7 @@ import streamlit as st
 from PIL import Image
 
 st.set_page_config(page_title='TDR transportes', page_icon='🚚', layout='wide')
-
+email_contact = 'tu_correo@example.com'
 #inicio
 with st.container():
     def crop_image(image_path, crop_box):
@@ -53,8 +53,19 @@ with st.container():
     st.write('---')
     st.header('¿Qué deseas realizar?')
     st.write('##')
-    contact_from=f"""
-    
+    contact_form=f"""
+    <form action='https://formsubmit.co/{email_contact}' method='POST'>
+    <input type='text' name='name' placeholder='Tu nombre' required>
+    <input type='email' name='email' placeholder='Tu email' required>
+    <textarea type='email' name='message' placeholder='Tu mensaje aqui' required><textarea>
+    <button type='submit'>Enviar</button>
+    </from>
+    """
+    left_column, rigth_column= st.columns(2)
+    with left_column:
+        st.markdown(contact_form, unsafe_allow_html=True)
+    with rigth_column:
+        st.empty()
 
 #servicios
 

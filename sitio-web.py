@@ -47,7 +47,7 @@ with st.container():
     st.write('')
     image_column, text_column=st.columns((2,1))
     with image_column:
-        image= Image.open('imagenes/sitio-web.png')
+        image= Image.open('images/TDR1.jpeg')
         st.image(image, use_column_width=True)
     with text_column:
         st.subheader('Dataframe registro de ordenes')

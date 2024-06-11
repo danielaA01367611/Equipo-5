@@ -219,11 +219,6 @@ elif dashboard_mode == 'Tabla':
     st.markdown("<h1 style='font-weight: bold;'>Búsqueda por órdenes o por camiones 🔍</h1>", unsafe_allow_html=True)
     st.markdown("---")
 
-    uploaded_file = st.file_uploader("Cargar archivo CSV o Excel", type=["csv", "xlsx"])
-
-    st.write('---')
-    st.header('Busca una orden en específico')
-
     with st.container():
         st.write('##')
 
@@ -247,3 +242,4 @@ elif dashboard_mode == 'Tabla':
                 st.write(f'Resultados para el Número de Camión: {tractor_number}')
                 # Aquí puedes agregar el código para buscar y mostrar los resultados
 
+    

@@ -2,9 +2,15 @@ import streamlit as st
 from PIL import Image
 import pandas as pd
 from io import StringIO
+import plotly.express as px
+from datetime import datetime
+
 
 st.set_page_config(page_title='TDR transportes', page_icon='🚚', layout='wide')
 email_contact = 'tu_correo@example.com'
+st.sidebar.image('imagenes/logo.png', use_column_width=True)
+dashboard_mode=st.sidebar.radio('Seleccionar el dashboard a visualizar', ('Tabla', 'Gráficos', 'Rutas'))
+rutas_df=None
 #inicio
 with st.container():
     def crop_image(image_path, crop_box):
@@ -21,7 +27,7 @@ with st.container():
     st.write('Somos TDR, trabajando siempre en la creación e implementación de soluciones integrales de transporte, rentables, eficientes e innovadoras.')
     st.write('[Saber más >] (https://www.tdr.com.mx/index.html)')
 
-
+ 
 #¿que quieres realizar?
 
 with st.container():

@@ -7,26 +7,78 @@ from datetime import datetime
 
 
 st.set_page_config(page_title='TDR transportes', page_icon='🚚', layout='wide')
-email_contact = 'tu_correo@example.com'
-st.sidebar.image('imagenes/logo.png', use_column_width=True)
-dashboard_mode=st.sidebar.radio('Seleccionar el dashboard a visualizar', ('Tabla', 'Gráficos', 'Rutas'))
-rutas_df=None
-#inicio
-with st.container():
-    def crop_image(image_path, crop_box):
-        image = Image.open(image_path)
-        cropped_image = image.crop(crop_box)
-        return cropped_image
-    
-    header_image_path = 'imagenes/TDR 2.jpeg'
-    crop_box = (50, 300, 800, 500)  # Ajusta estos valores según sea necesario (left, upper, right, lower)
-    header_image = crop_image(header_image_path, crop_box)
-    st.image(header_image, use_column_width=True)
-    st.header('TDR transportes portal del pago de casetas 🚚')
-    st.title('La grandeza de TDR es gracias a la grandeza de su gente')
-    st.write('Somos TDR, trabajando siempre en la creación e implementación de soluciones integrales de transporte, rentables, eficientes e innovadoras.')
-    st.write('[Saber más >] (https://www.tdr.com.mx/index.html)')
 
+
+def crop_image(image_path, crop_box):
+    image = Image.open(image_path)
+    cropped_image = image.crop(crop_box)
+    return cropped_image
+
+#sidebar
+st.sidebar.image('imagenes/logo.png', use_column_width=True)
+dashboard_mode=st.sidebar.radio('Seleccionar el apartado que deseas visualizar', ('Inicio', 'Tabla', 'Gráficos', 'Gráficos detallados','Rutas'))
+rutas_df=None
+
+if dashboard_mode == 'Inicio':
+    # Encabezado de la página principal
+    with st.container():
+        header_image_path = 'imagenes/TDR 2.jpeg'
+        crop_box = (50, 300, 800, 500)  # Ajusta estos valores según sea necesario (left, upper, right, lower)
+        header_image = crop_image(header_image_path, crop_box)
+        st.image(header_image, use_column_width=True)
+        st.title('TDR transportes: PORTAL DE PAGO DE CASETAS 🚚')
+        st.header('La grandeza de TDR es gracias a la grandeza de su gente')
+        st.write('Somos TDR, trabajando siempre en la creación e implementación de soluciones integrales de transporte, rentables, eficientes e innovadoras.')
+        st.write('[Saber más >](https://www.tdr.com.mx/index.html)')
+
+elif dashboard_mode == 'Tabla':
+    # Contenido del apartado 'Tabla'
+    st.markdown("<h1 style='font-weight: bold;'>Búsqueda por órdenes o por camiones 🔍</h1>", unsafe_allow_html=True)
+    st.markdown("---")
+
+    uploaded_file = st.file_uploader("Cargar archivo CSV o Excel", type=["csv", "xlsx"])
+
+    st.write('---')
+    st.header('Busca una orden en específico')
+
+
+    with st.container():
+        st.write('##')
+
+        # Formulario de búsqueda
+        search_option = st.selectbox(
+            'Seleccione el tipo de búsqueda:',
+            ('Número de Orden', 'Número de Camión')
+        )
+
+        if search_option == 'Número de Orden':
+            order_number = st.text_input('Ingrese el Número de Orden:')
+            if st.button('Buscar por Número de Orden'):
+                # Lógica de búsqueda por número de orden
+                st.write(f'Resultados para el Número de Orden: {order_number}')
+                # Aquí puedes agregar el código para buscar y mostrar los resultados
+
+        elif search_option == 'Número de Camión':
+            tractor_number = st.text_input('Ingrese el Número de Camión:')
+            if st.button('Buscar por Número de Camión'):
+                # Lógica de búsqueda por número de tractor
+                st.write(f'Resultados para el Número de Camión: {tractor_number}')
+                # Aquí puedes agregar el código para buscar y mostrar los resultados
+
+
+
+    if uploaded_file is None:
+        df = pd.read_excel("SALIDA A FABRICACION Limpia.xlsx")
+        st.warning("Por favor, carga un dataset para comenzar.")
+    else:
+        df = None
+        file_extension = uploaded_file.name.split(".")[-1]
+
+        # Cargar el archivo según su extensión
+        if file_extension == "csv":
+            df = pd.read_csv(uploaded_file)
+        elif file_extension in ["xls", "xlsx"]:
+            df = pd.read_excel(uploaded_file)
  
 #¿que quieres realizar?
 
@@ -37,44 +89,26 @@ with st.container():
         st.header('¿Qué puedes hacer en este portal? 🔍')
         st.write(
                 """
-            El objetivo de este portal es corroborar el costo acumulado de casetas por número de orden según el número el camión.
+            El objetivo de este portal es corroborar el costo acumulado de casetas según el número de orden.
             Aquí puedes visualizar: 
 
             - Fechas de inicio y fin de las ordenes
 
             - Ciudad de origen y ciudad destino de las ordenes
 
-            - Total acumulado pagado en casetas por orden
-
             - Número de camión que completó la orden
+
+            - Total acumulado pagado en casetas por orden
 
             - Presupuesto del pago total de casetas por ruta
 
-            - Representaciones visuales de las ordenes
+            - Gráficos y apoyos visuales de los datos
 
             """
         )
     with animation_column:
         st.empty()
 
-#botón de email
-with st.container():
-    st.write('---')
-    st.header('¿Qué deseas realizar?')
-    st.write('##')
-    contact_form=f"""
-    <form action='https://formsubmit.co/{email_contact}' method='POST'>
-    <input type='text' name='name' placeholder='Tu nombre' required>
-    <input type='email' name='email' placeholder='Tu email' required>
-    <textarea type='email' name='message' placeholder='Tu mensaje aqui' required></textarea>
-    <button type='submit'>Enviar</button>
-    </from>
-    """
-    left_column, rigth_column= st.columns(2)
-    with left_column:
-        st.markdown(contact_form, unsafe_allow_html=True)
-    with rigth_column:
-        st.empty()
 
 #subir archivos
 

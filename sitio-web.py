@@ -13,14 +13,6 @@ def crop_image(image_path, crop_box):
     cropped_image = image.crop(crop_box)
     return cropped_image
 
-# Función para verificar el formato de la fecha
-def check_date_format(date_str):
-    try:
-        pd.to_datetime(date_str, format='%d/%m/%Y %H:%M')
-        return True
-    except ValueError:
-        return False
-
 if 'Inicio' not in st.session_state:
     st.session_state['Inicio'] = {}
 
@@ -29,7 +21,7 @@ st.set_page_config(page_title='TDR transportes', page_icon='🚚', layout='wide'
 
 # Sidebar
 st.sidebar.image('imagenes/logo.png', use_column_width=True)
-dashboard_mode = st.sidebar.radio('Seleccionar el apartado que deseas visualizar', ('Inicio', 'Tabla', 'Gráficos', 'Gráficos detallados', 'Rutas'))
+dashboard_mode = st.sidebar.radio('Seleccionar el apartado que deseas visualizar', ('Inicio', 'Pre-procesamiento de datos', 'Tabla', 'Gráficos', 'Gráficos detallados', 'Rutas'))
 
 
 # Mostrar el contenido basado en la opción seleccionada
@@ -71,43 +63,6 @@ if dashboard_mode == 'Inicio':
                 )
             with animation_column:
                 st.empty()
-                
-        with st.container():
-            st.write('---')
-            st.header('Sube los archivos necesarios:')
-            st.write('##')
-
-            # Widget para subir archivo scroll order
-            uploaded_file_scroll_order = st.file_uploader("Sube tu archivo xls de scroll order", type=["xls"])
-        
-        if uploaded_file_scroll_order is not None:
-            df_scroll_order = pd.read_excel(uploaded_file_scroll_order)
-            st.session_state['Inicio']['scroll_order'] = df_scroll_order
-
-            st.write("Archivo de scroll order cargado:")
-            st.dataframe(df_scroll_order)
-
-        # Repetir para otros archivos
-        uploaded_file_capufe = st.file_uploader("Sube tu archivo xls de CAPUFE", type=["xls"])
-        if uploaded_file_capufe is not None:
-            df_capufe = pd.read_excel(uploaded_file_capufe)
-            st.session_state['Inicio']['capufe'] = df_capufe
-            st.write("Archivo de CAPUFE cargado:")
-            st.dataframe(df_capufe)
-
-        uploaded_file_televia = st.file_uploader("Sube tu archivo xls de Televia", type=["xls"])
-        if uploaded_file_televia is not None:
-            df_televia = pd.read_excel(uploaded_file_televia)
-            st.session_state['Inicio']['televia'] = df_televia
-            st.write("Archivo de Televia cargado:")
-            st.dataframe(df_televia)
-
-        uploaded_file_rutas = st.file_uploader("Sube tu archivo xls de rutas", type=["xls"])
-        if uploaded_file_rutas is not None:
-            df_rutas = pd.read_excel(uploaded_file_rutas)
-            st.session_state['Inicio']['rutas'] = df_rutas
-            st.write("Archivo de rutas cargado:")
-            st.dataframe(df_rutas)
        
         with st.container():
             st.write('---')
@@ -183,127 +138,188 @@ if dashboard_mode == 'Inicio':
                     en un mapa.
                     """
                 )
+if 'Pre-procesamiento' not in st.session_state:
+    st.session_state['Pre-procesamiento'] = {}
+
+elif dashboard_mode == 'Pre-procesamiento de datos':
+    st.markdown("<h1 style='font-weight: bold;'>Sube aquí tus archivos a procesar 📁</h1>", unsafe_allow_html=True)
+    st.markdown("---")
+
+    # Subir y mostrar archivo de Scroll Order
+    st.markdown("### Archivo de Scroll Order")
+    uploaded_file_scroll_order = st.file_uploader("Sube tu archivo del scroll order (Excel)", type=["xls", "xlsx"])
+
+    # Subir y mostrar archivo de Casetas
+    st.markdown("### Archivo de Casetas")
+    uploaded_file_casetas = st.file_uploader("Sube tu archivo de casetas (Excel)", type=["xls", "xlsx"])
+
+    if uploaded_file_scroll_order and uploaded_file_casetas:
+        # Todos los archivos han sido subidos
+        st.success("Todos los archivos se han cargado correctamente. Puedes proceder con el procesamiento de datos.")
+
+        # Ahora puedes leer los archivos y realizar el procesamiento de datos
+        df_scroll_order = pd.read_excel(uploaded_file_scroll_order)
+        df_casetas = pd.read_excel(uploaded_file_casetas)
+
+        # Filtrar y procesar los datos
+        df_scroll_order = df_scroll_order[(df_scroll_order.orderby_cmp_id == 'GNV') | (df_scroll_order.orderby_cmp_id == 'GNVMTY01')]
+        df_casetas = df_casetas[['Unidad', 'TAG']]
+        df_casetas['Unidad'] = df_casetas['Unidad'].astype(str)
+        df_casetas = df_casetas[(df_casetas.Unidad == '1710') |
+                                (df_casetas.Unidad == '1712') |
+                                (df_casetas.Unidad == '1713') |
+                                (df_casetas.Unidad == '1778') |
+                                (df_casetas.Unidad == '1780') |
+                                (df_casetas.Unidad == '1784') |
+                                (df_casetas.Unidad == '1786') |
+                                (df_casetas.Unidad == '1835') |
+                                (df_casetas.Unidad == '1868') |
+                                (df_casetas.Unidad == '1711')]
+        df_casetas = df_casetas.drop_duplicates()
+        df_scroll_order = df_scroll_order.reset_index(drop=True)
+        df_casetas = df_casetas.reset_index(drop=True)
+        df_scroll_order = df_scroll_order.rename(columns={'ord_tractor': 'Unidad'})
+        df_scroll_order['Unidad'] = df_scroll_order['Unidad'].astype(str)
+        df_final = pd.merge(df_casetas, df_scroll_order, on="Unidad")
+        df_final = df_final[['Unidad', 'TAG', 'ord_number', 'billto_cmp_id', 'ord_startdate', 'ord_completiondate', 'ord_revtype4', 'ord_totalcharge', 'origin_cty_nmstct', 'dest_cyt_nmstct', 'ord_totalmiles']]
+
+        st.write("Resultado final del procesamiento:")
+        st.dataframe(df_final)
+        df_final.to_xls("GNV.xls")
+    else:
+        # Alguno o todos los archivos no se han subido correctamente
+        st.error("Por favor, asegúrate de cargar todos los archivos antes de continuar.")
 
 elif dashboard_mode == 'Tabla':
     # Contenido del apartado 'Tabla'
-    st.markdown("<h1 style='font-weight: bold;'>Búsqueda por órdenes o por camiones 🔍</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='font-weight: bold;'>Tabla de órdenes mensuales por proyecto 📋</h1>", unsafe_allow_html=True)
     st.markdown("---")
 
-    with st.container():
-        st.write('##')
+    # Pedir al usuario que suba los 4 archivos
+    st.markdown("<h2 style='font-weight: bold;'>Sube tus archivos aquí:</h2>", unsafe_allow_html=True)
 
-        # Formulario de búsqueda
-        search_option = st.selectbox(
-            'Seleccione el tipo de búsqueda:',
-            ('Número de Orden', 'Número de Camión')
-        )
+    uploaded_file_project = st.file_uploader("Proyecto Seleccionado Final (Excel)", type=["xls", "xlsx"])
+    uploaded_file_capufe = st.file_uploader("Archivo de Capufe (Excel)", type=["xls", "xlsx"])
+    uploaded_file_televia = st.file_uploader("Archivo de Televia (Excel)", type=["xls", "xlsx"])
+    uploaded_file_global_map = st.file_uploader("Archivo de Global Map (Excel)", type=["xls", "xlsx"])
 
-        if search_option == 'Número de Orden':
-            order_number = st.text_input('Ingrese el Número de Orden:')
-            if st.button('Buscar por Número de Orden'):
-                # Lógica de búsqueda por número de orden
-                st.write(f'Resultados para el Número de Orden: {order_number}')
-                # Aquí puedes agregar el código para buscar y mostrar los resultados
+    if uploaded_file_project and uploaded_file_capufe and uploaded_file_televia and uploaded_file_global_map:
+        # Todos los archivos han sido subidos
+        st.success("Todos los archivos se han cargado correctamente. Puedes proceder con el procesamiento de datos.")
 
-        elif search_option == 'Número de Camión':
-            tractor_number = st.text_input('Ingrese el Número de Camión:')
-            if st.button('Buscar por Número de Camión'):
+        # Ahora puedes leer los archivos y realizar el procesamiento de datos
+        df_project = pd.read_excel(uploaded_file_project)
+        df_capufe = pd.read_excel(uploaded_file_capufe)
+        df_televia = pd.read_excel(uploaded_file_televia)
+        df_gm= pd.read_excel(uploaded_file_global_map)
+    
+        df_project['ord_startdate'] = pd.to_datetime(df_project['ord_startdate'], format='%d-%m-%Y %H:%M:%S')
+        df_project['ord_completiondate'] = pd.to_datetime(df_project['ord_completiondate'], format='%d-%m-%Y %H:%M:%S')
+        df_televia['Fecha'] = pd.to_datetime(df_televia['Fecha'], format='%d-%m-%Y %H:%M:%S')
+        df_capufe['FECHA Y HORA CRUCE'] = pd.to_datetime(df_capufe['FECHA Y HORA CRUCE'], format='%d/%m/%Y %H:%M')
+
+        class display(object):
+            """Display HTML representation of multiple objects"""
+            template = """<div style="float: left; padding: 10px;">
+            <p style='font-family:"Courier New", Courier, monospace'>{0}</p>{1}
+            </div>"""
+            def __init__(self, *args):
+                self.args = args
+
+            def _repr_html_(self):
+                return '\n'.join(self.template.format(a, eval(a)._repr_html_())
+                                for a in self.args)
+
+            def __repr__(self):
+                return '\n\n'.join(a + '\n' + repr(eval(a))
+                                for a in self.args)
+            
+
+        merged_dfs = pd.merge(df_televia, df_project, how='inner', on='TAG')
+        cumple = (merged_dfs['Fecha'] >= merged_dfs['ord_startdate'] - pd.Timedelta(minutes=10)) & (merged_dfs['Fecha'] <= merged_dfs['ord_completiondate'] + pd.Timedelta(minutes=10))
+        merged_dfs[cumple]
+
+        cumplen = merged_dfs[cumple]
+        grouped_df = cumplen.groupby(cumplen['ord_number']).agg({
+            'Importe': ['sum'], 'TAG': 'max'
+        })
+
+        grouped_df = grouped_df.reset_index()
+        grouped_df.columns = ['_'.join(col).strip() if type(col) is tuple else col for col in grouped_df.columns.values]
+        grouped_df.columns = ['ord_number', 'IMPORTE TELEVIA', 'TAG']
+
+        merged_dfs2 = pd.merge(df_capufe, df_project, how='inner', on='TAG')
+        cumple2 = (merged_dfs2['FECHA Y HORA CRUCE'] >= merged_dfs2['ord_startdate'] - pd.Timedelta(minutes=10)) & (merged_dfs2['FECHA Y HORA CRUCE'] <= merged_dfs2['ord_completiondate'] + pd.Timedelta(minutes=10))
+        merged_dfs2[cumple2]
+
+        cumplen2 = merged_dfs2[cumple2]
+        grouped_df2 = cumplen2.groupby(cumplen2['ord_number']).agg({
+            'IMPORTE COBRADO': ['sum'], 'TAG': 'max'
+        })
+
+        grouped_df2 = grouped_df2.reset_index()
+        grouped_df2.columns = ['_'.join(col).strip() if type(col) is tuple else col for col in grouped_df2.columns.values]
+        grouped_df2.columns = ['ord_number', 'IMPORTE CAPUFE', 'TAG']
+
+        imp = pd.concat([grouped_df, grouped_df2], ignore_index=True)
+        Costos = pd.merge(imp, df_project, on="ord_number")
+        Costos['origin_cty_nmstct'] = Costos['origin_cty_nmstct'].str.replace('MONTERREY,NX/', 'MONTERREY,NX')
+        Costos['dest_cyt_nmstct'] = Costos['dest_cyt_nmstct'].str.replace('MONTERREY,NX/', 'MONTERREY,NX')
+
+        df_gm['origin_cty_nmstct'] = df_gm['origin_cty_nmstct'].str.replace('Cuautitlan Izcalli', 'CUAUTITLAN IZCALLI,EM')
+        df_gm['origin_cty_nmstct'] = df_gm['origin_cty_nmstct'].str.replace('Gustavo A. Madero', 'GUSTAVO A. MADERO,DF/Mex')
+        df_gm['origin_cty_nmstct'] = df_gm['origin_cty_nmstct'].str.replace('Iztapalapa', 'IZTAPALAPA,DF')
+        df_gm['origin_cty_nmstct'] = df_gm['origin_cty_nmstct'].str.replace('Monterrey', 'MONTERREY,NX')
+        df_gm['origin_cty_nmstct'] = df_gm['origin_cty_nmstct'].str.replace('San Miguel Xoxtla', 'SAN MIGUEL XOXTLA,PU')
+        df_gm['origin_cty_nmstct'] = df_gm['origin_cty_nmstct'].str.replace('Zapotlanejo', 'ZAPOTLANEJO,JA/Mex')
+        df_gm['origin_cty_nmstct'] = df_gm['origin_cty_nmstct'].str.replace('Tonala', 'TONALA,JA')
+        df_gm['origin_cty_nmstct'] = df_gm['origin_cty_nmstct'].str.replace('Juarez', 'JUAREZ,NX')
+
+        df_gm['dest_cyt_nmstct'] = df_gm['dest_cyt_nmstct'].str.replace('Cuautitlan Izcalli', 'CUAUTITLAN IZCALLI,EM')
+        df_gm['dest_cyt_nmstct'] = df_gm['dest_cyt_nmstct'].str.replace('Gustavo A. Madero', 'GUSTAVO A. MADERO,DF/Mex')
+        df_gm['dest_cyt_nmstct'] = df_gm['dest_cyt_nmstct'].str.replace('Iztapalapa', 'IZTAPALAPA,DF')
+        df_gm['dest_cyt_nmstct'] = df_gm['dest_cyt_nmstct'].str.replace('Monterrey', 'MONTERREY,NX')
+        df_gm['dest_cyt_nmstct'] = df_gm['dest_cyt_nmstct'].str.replace('San Miguel Xoxtla', 'SAN MIGUEL XOXTLA,PU')
+        df_gm['dest_cyt_nmstct'] = df_gm['dest_cyt_nmstct'].str.replace('Zapotlanejo', 'ZAPOTLANEJO,JA/Mex')
+        df_gm['dest_cyt_nmstct'] = df_gm['dest_cyt_nmstct'].str.replace('Tonala', 'TONALA,JA')
+        df_gm['dest_cyt_nmstct'] = df_gm['dest_cyt_nmstct'].str.replace('Juarez', 'JUAREZ,NX')
+
+        ComparativaV2 = pd.merge(Costos, df_gm, on=['origin_cty_nmstct', 'dest_cyt_nmstct'], how='inner')
+        ComparativaV2['IMPORTE TOTAL'] = ComparativaV2['IMPORTE TELEVIA'].fillna(0) + ComparativaV2['IMPORTE CAPUFE'].fillna(0)
+        ComparativaV2.drop(columns=['TAG_x', 'TAG_y', 'IMPORTE TELEVIA', 'IMPORTE CAPUFE', 'Column1', 'ord_revtype4', 'ord_totalcharge', 'origin_cty_nmstct', 'dest_cyt_nmstct', 'ord_totalmiles'], inplace=True)
+
+        ComparativaV2.rename(columns={'billto_cmp_id': 'Cliente'}, inplace=True)
+        ComparativaV2.rename(columns={'Costo total': 'Costo presupuestado (Global Maps)'}, inplace=True)
+        ComparativaV2.rename(columns={'IMPORTE TOTAL': 'Costo calculado'}, inplace=True)
+
+        tabla_fin = ComparativaV2[ComparativaV2['Ruta'] != 'San Miguel Xoxtla-Gustavo A. Madero']
+        tabla_fin= tabla_fin.reset_index(drop=True)
+        st.write("Resultado final:")
+        st.dataframe(tabla_fin)
+        tabla_fin.to_xls("tabla_final.xls")
+    
+    else:
+        # Alguno o todos los archivos no se han subido correctamente
+        st.error("Por favor, asegúrate de cargar todos los archivos antes de continuar.")
+
+    
+    st.markdown("<h1 style='font-weight: bold;'>Tabla de ordenes mensuales por proyecto 📋</h1>", unsafe_allow_html=True)
+    st.markdown("---")
+    search_option = st.selectbox(
+        'Seleccione el tipo de búsqueda:',
+        ('Número de Orden', 'Número de Camión')
+    )
+
+    if search_option == 'Número de Orden':
+        order_number = st.text_input('Ingrese el Número de Orden:')
+        if st.button('Buscar por Número de Orden'):
+            # Lógica de búsqueda por número de orden
+            st.write(f'Resultados para el Número de Orden: {order_number}')
+            # Aquí puedes agregar el código para buscar y mostrar los resultados
+
+    elif search_option == 'Número de Camión':
+        tractor_number = st.text_input('Ingrese el Número de Camión:')
+        if st.button('Buscar por Número de Camión'):
                 # Lógica de búsqueda por número de tractor
                 st.write(f'Resultados para el Número de Camión: {tractor_number}')
                 # Aquí puedes agregar el código para buscar y mostrar los resultados
-
-        if 'scroll_order' in st.session_state['Inicio'] and 'capufe' in st.session_state['Inicio'] and 'televia' in st.session_state['Inicio'] and 'rutas' in st.session_state['Inicio']:
-            df_scroll_order = st.session_state['Inicio']['scroll_order']
-            df_capufe = st.session_state['Inicio']['capufe']
-            df_televia = st.session_state['Inicio']['televia']
-            df_rutas = st.session_state['Inicio']['casetas']
-
-            df_scroll_order['ord_startdate'] = pd.to_datetime(df_scroll_order['ord_startdate'], format='%d-%m-%Y %H:%M:%S')
-            df_scroll_order['ord_completiondate'] = pd.to_datetime(df_scroll_order['ord_completiondate'], format='%d-%m-%Y %H:%M:%S')
-            df_televia['Fecha'] = pd.to_datetime(df_televia['Fecha'], format='%d-%m-%Y %H:%M:%S')
-            df_capufe['FECHA Y HORA CRUCE'] = pd.to_datetime(df_capufe['FECHA Y HORA CRUCE'], format='%d/%m/%Y %H:%M')    
-
-    class display(object):
-        """Display HTML representation of multiple objects"""
-        template = """<div style="float: left; padding: 10px;">
-        <p style='font-family:"Courier New", Courier, monospace'>{0}</p>{1}
-        </div>"""
-        def __init__(self, *args):
-            self.args = args
-
-        def _repr_html_(self):
-            return '\n'.join(self.template.format(a, eval(a)._repr_html_())
-                            for a in self.args)
-
-        def __repr__(self):
-            return '\n\n'.join(a + '\n' + repr(eval(a))
-                               for a in self.args)
-               
-    merged_dfs = pd.merge(df_televia, df_scroll_order, how='inner', on='TAG')
-    cumple = (merged_dfs['Fecha'] >= merged_dfs['ord_startdate'] - pd.Timedelta(minutes=10)) & (merged_dfs['Fecha'] <= merged_dfs['ord_completiondate'] + pd.Timedelta(minutes=10))
-    merged_dfs[cumple]
-
-    cumplen = merged_dfs[cumple]
-    grouped_df = cumplen.groupby(cumplen['ord_number']).agg({
-        'Importe': ['sum'], 'TAG': 'max'
-    })
-
-    grouped_df = grouped_df.reset_index()
-
-    grouped_df.columns = ['_'.join(col).strip() if type(col) is tuple else col for col in grouped_df.columns.values]
-
-    grouped_df.columns = ['ord_number', 'IMPORTE TELEVIA', 'TAG']
-
-    merged_dfs2 = pd.merge(df_capufe, df_scroll_order, how='inner', on='TAG')
-    cumple2 = (merged_dfs2['FECHA Y HORA CRUCE'] >= merged_dfs2['ord_startdate'] - pd.Timedelta(minutes=10)) & (merged_dfs2['FECHA Y HORA CRUCE'] <= merged_dfs2['ord_completiondate'] + pd.Timedelta(minutes=10))
-    merged_dfs2[cumple2]
-
-    cumplen2 = merged_dfs2[cumple2]
-    grouped_df2 = cumplen2.groupby(cumplen2['ord_number']).agg({
-        'IMPORTE COBRADO': ['sum'], 'TAG': 'max'
-    })
-
-    grouped_df2 = grouped_df2.reset_index()
-
-    grouped_df2.columns = ['_'.join(col).strip() if type(col) is tuple else col for col in grouped_df2.columns.values]
-
-    grouped_df2.columns = ['ord_number', 'IMPORTE CAPUFE', 'TAG']
-
-    imp = pd.concat([grouped_df, grouped_df2], ignore_index=True)
-
-    Costos = pd.merge(imp, df_scroll_order, on="ord_number")
-    combinaciones = Costos.groupby(['origin_cty_nmstct', 'dest_cyt_nmstct']).size().reset_index(name='conteo')
-
-    Costos['origin_cty_nmstct'] = Costos['origin_cty_nmstct'].str.replace('MONTERREY,NX/', 'MONTERREY,NX')
-    Costos['dest_cyt_nmstct'] = Costos['dest_cyt_nmstct'].str.replace('MONTERREY,NX/', 'MONTERREY,NX')
-
-    df_rutas['origin_cty_nmstct'] = df_rutas['origin_cty_nmstct'].str.replace('Cuautitlan Izcalli', 'CUAUTITLAN IZCALLI,EM')
-    df_rutas['origin_cty_nmstct'] = df_rutas['origin_cty_nmstct'].str.replace('Gustavo A. Madero', 'GUSTAVO A. MADERO,DF/Mex')
-    df_rutas['origin_cty_nmstct'] = df_rutas['origin_cty_nmstct'].str.replace('Iztapalapa', 'IZTAPALAPA,DF')
-    df_rutas['origin_cty_nmstct'] = df_rutas['origin_cty_nmstct'].str.replace('Monterrey', 'MONTERREY,NX')
-    df_rutas['origin_cty_nmstct'] = df_rutas['origin_cty_nmstct'].str.replace('San Miguel Xoxtla', 'SAN MIGUEL XOXTLA,PU')
-    df_rutas['origin_cty_nmstct'] = df_rutas['origin_cty_nmstct'].str.replace('Zapotlanejo', 'ZAPOTLANEJO,JA/Mex')
-    df_rutas['origin_cty_nmstct'] = df_rutas['origin_cty_nmstct'].str.replace('Tonala', 'TONALA,JA')
-    df_rutas['origin_cty_nmstct'] = df_rutas['origin_cty_nmstct'].str.replace('Juarez', 'JUAREZ,NX')
-
-    df_rutas['dest_cyt_nmstct'] = df_rutas['dest_cyt_nmstct'].str.replace('Cuautitlan Izcalli', 'CUAUTITLAN IZCALLI,EM')
-    df_rutas['dest_cyt_nmstct'] = df_rutas['dest_cyt_nmstct'].str.replace('Gustavo A. Madero', 'GUSTAVO A. MADERO,DF/Mex')
-    df_rutas['dest_cyt_nmstct'] = df_rutas['dest_cyt_nmstct'].str.replace('Iztapalapa', 'IZTAPALAPA,DF')
-    df_rutas['dest_cyt_nmstct'] = df_rutas['dest_cyt_nmstct'].str.replace('Monterrey', 'MONTERREY,NX')
-    df_rutas['dest_cyt_nmstct'] = df_rutas['dest_cyt_nmstct'].str.replace('San Miguel Xoxtla', 'SAN MIGUEL XOXTLA,PU')
-    df_rutas['dest_cyt_nmstct'] = df_rutas['dest_cyt_nmstct'].str.replace('Zapotlanejo', 'ZAPOTLANEJO,JA/Mex')
-    df_rutas['dest_cyt_nmstct'] = df_rutas['dest_cyt_nmstct'].str.replace('Tonala', 'TONALA,JA')
-    df_rutas['dest_cyt_nmstct'] = df_rutas['dest_cyt_nmstct'].str.replace('Juarez', 'JUAREZ,NX')
-
-    ComparativaV2 = pd.merge(Costos, df_rutas, on=['origin_cty_nmstct', 'dest_cyt_nmstct'], how='inner')
-    ComparativaV2['IMPORTE TOTAL'] = ComparativaV2['IMPORTE TELEVIA'].fillna(0) + ComparativaV2['IMPORTE CAPUFE'].fillna(0)
-    ComparativaV2.drop(columns=['TAG_x', 'TAG_y', 'IMPORTE TELEVIA', 'IMPORTE CAPUFE', 'Column1', 'ord_revtype4', 'ord_totalcharge', 'origin_cty_nmstct', 'dest_cyt_nmstct', 'ord_totalmiles'], inplace=True)
-
-    ComparativaV2.rename(columns={'billto_cmp_id': 'Cliente'}, inplace=True)
-    ComparativaV2.rename(columns={'Costo total': 'Costo presupuestado (Global Maps)'}, inplace=True)
-    ComparativaV2.rename(columns={'IMPORTE TOTAL': 'Costo calculado'}, inplace=True)
-
-    tabla_fin = ComparativaV2[ComparativaV2['Ruta'] != 'San Miguel Xoxtla-Gustavo A. Madero']
-    tabla_fin= tabla_fin.reset_index(drop=True)
-    print(tabla_fin)
-

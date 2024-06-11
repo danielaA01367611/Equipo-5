@@ -4,8 +4,8 @@ import pandas as pd
 from io import StringIO
 import plotly.express as px
 from datetime import datetime
-
-st.set_page_config(page_title='TDR transportes', page_icon='🚚', layout='wide')
+import numpy as np
+import os
 
 # Función para recortar la imagen
 def crop_image(image_path, crop_box):
@@ -21,12 +21,20 @@ def check_date_format(date_str):
     except ValueError:
         return False
 
+if 'Inicio' not in st.session_state:
+    st.session_state['Inicio'] = {}
+
+st.set_page_config(page_title='TDR transportes', page_icon='🚚', layout='wide')
+
+
 # Sidebar
 st.sidebar.image('imagenes/logo.png', use_column_width=True)
 dashboard_mode = st.sidebar.radio('Seleccionar el apartado que deseas visualizar', ('Inicio', 'Tabla', 'Gráficos', 'Gráficos detallados', 'Rutas'))
 
+
 # Mostrar el contenido basado en la opción seleccionada
 if dashboard_mode == 'Inicio':
+
     # Encabezado de la página principal
     with st.container():
         header_image_path = 'imagenes/TDR 2.jpeg'
@@ -72,72 +80,34 @@ if dashboard_mode == 'Inicio':
             # Widget para subir archivo scroll order
             uploaded_file_scroll_order = st.file_uploader("Sube tu archivo xls de scroll order", type=["xls"])
         
-            if uploaded_file_scroll_order is not None:
-                df_scroll_order = pd.read_excel(uploaded_file_scroll_order)
+        if uploaded_file_scroll_order is not None:
+            df_scroll_order = pd.read_excel(uploaded_file_scroll_order)
+            st.session_state['Inicio']['scroll_order'] = df_scroll_order
 
-                st.write("Archivo de scroll order cargado:")
-                st.dataframe(df_scroll_order)
+            st.write("Archivo de scroll order cargado:")
+            st.dataframe(df_scroll_order)
 
-                # Verificar formato de las fechas
-                date_column_scroll_order = st.selectbox("Selecciona la columna de fecha en scroll order", df_scroll_order.columns)
-                df_scroll_order["Valid_Date_Format"] = df_scroll_order[date_column_scroll_order].apply(check_date_format)
+        # Repetir para otros archivos
+        uploaded_file_capufe = st.file_uploader("Sube tu archivo xls de CAPUFE", type=["xls"])
+        if uploaded_file_capufe is not None:
+            df_capufe = pd.read_excel(uploaded_file_capufe)
+            st.session_state['Inicio']['capufe'] = df_capufe
+            st.write("Archivo de CAPUFE cargado:")
+            st.dataframe(df_capufe)
 
-                if df_scroll_order["Valid_Date_Format"].all():
-                    st.success("Todas las fechas tienen el formato correcto (YYYY-MM-DD).")
-                else:
-                    st.error("Algunas fechas no tienen el formato correcto (YYYY-MM-DD).")
-                    st.write(df_scroll_order[~df_scroll_order["Valid_Date_Format"]])
+        uploaded_file_televia = st.file_uploader("Sube tu archivo xls de Televia", type=["xls"])
+        if uploaded_file_televia is not None:
+            df_televia = pd.read_excel(uploaded_file_televia)
+            st.session_state['Inicio']['televia'] = df_televia
+            st.write("Archivo de Televia cargado:")
+            st.dataframe(df_televia)
 
-            # Widget para subir archivo de Televia
-            uploaded_file_televia = st.file_uploader("Sube tu archivo xls de Televia", type=["xls"])
-
-            if uploaded_file_televia is not None:
-                df_televia = pd.read_excel(uploaded_file_televia)
-                st.write("Archivo de Televia cargado:")
-                st.dataframe(df_televia)
-
-                date_column_televia = st.selectbox("Selecciona la columna de fecha en Televia", df_televia.columns)
-                df_televia["Valid_Date_Format"] = df_televia[date_column_televia].apply(check_date_format)
-
-                if df_televia["Valid_Date_Format"].all():
-                    st.success("Todas las fechas tienen el formato correcto (YYYY-MM-DD).")
-                else:
-                    st.error("Algunas fechas no tienen el formato correcto (YYYY-MM-DD).")
-                    st.write(df_televia[~df_televia["Valid_Date_Format"]])
-
-            # Widget para subir archivo de Capufe
-            uploaded_file_capufe = st.file_uploader("Sube tu archivo xls de Capufe", type=["xls"])
-
-            if uploaded_file_capufe is not None:
-                df_capufe = pd.read_excel(uploaded_file_capufe)
-                st.write("Archivo de Capufe cargado:")
-                st.dataframe(df_capufe)
-
-                date_column_capufe = st.selectbox("Selecciona la columna de fecha en Capufe", df_capufe.columns)
-                df_capufe["Valid_Date_Format"] = df_capufe[date_column_capufe].apply(check_date_format)
-
-                if df_capufe["Valid_Date_Format"].all():
-                    st.success("Todas las fechas tienen el formato correcto (YYYY-MM-DD).")
-                else:
-                    st.error("Algunas fechas no tienen el formato correcto (YYYY-MM-DD).")
-                    st.write(df_capufe[~df_capufe["Valid_Date_Format"]])
-
-            # Widget para subir archivo de Casetas
-            uploaded_file_casetas = st.file_uploader("Sube tu archivo xls de Casetas", type=["xls"])
-
-            if uploaded_file_casetas is not None:
-                df_casetas = pd.read_excel(uploaded_file_casetas)
-                st.write("Archivo de Casetas cargado:")
-                st.dataframe(df_casetas)
-
-                date_column_casetas = st.selectbox("Selecciona la columna de fecha en Casetas", df_casetas.columns)
-                df_casetas["Valid_Date_Format"] = df_casetas[date_column_casetas].apply(check_date_format)
-
-                if df_casetas["Valid_Date_Format"].all():
-                    st.success("Todas las fechas tienen el formato correcto (YYYY-MM-DD).")
-                else:
-                    st.error("Algunas fechas no tienen el formato correcto (YYYY-MM-DD).")
-                    st.write(df_casetas[~df_casetas["Valid_Date_Format"]])
+        uploaded_file_rutas = st.file_uploader("Sube tu archivo xls de rutas", type=["xls"])
+        if uploaded_file_rutas is not None:
+            df_rutas = pd.read_excel(uploaded_file_rutas)
+            st.session_state['Inicio']['rutas'] = df_rutas
+            st.write("Archivo de rutas cargado:")
+            st.dataframe(df_rutas)
        
         with st.container():
             st.write('---')
@@ -242,4 +212,98 @@ elif dashboard_mode == 'Tabla':
                 st.write(f'Resultados para el Número de Camión: {tractor_number}')
                 # Aquí puedes agregar el código para buscar y mostrar los resultados
 
-    
+        if 'scroll_order' in st.session_state['Inicio'] and 'capufe' in st.session_state['Inicio'] and 'televia' in st.session_state['Inicio'] and 'rutas' in st.session_state['Inicio']:
+            df_scroll_order = st.session_state['Inicio']['scroll_order']
+            df_capufe = st.session_state['Inicio']['capufe']
+            df_televia = st.session_state['Inicio']['televia']
+            df_rutas = st.session_state['Inicio']['casetas']
+
+            df_scroll_order['ord_startdate'] = pd.to_datetime(df_scroll_order['ord_startdate'], format='%d-%m-%Y %H:%M:%S')
+            df_scroll_order['ord_completiondate'] = pd.to_datetime(df_scroll_order['ord_completiondate'], format='%d-%m-%Y %H:%M:%S')
+            df_televia['Fecha'] = pd.to_datetime(df_televia['Fecha'], format='%d-%m-%Y %H:%M:%S')
+            df_capufe['FECHA Y HORA CRUCE'] = pd.to_datetime(df_capufe['FECHA Y HORA CRUCE'], format='%d/%m/%Y %H:%M')    
+
+    class display(object):
+        """Display HTML representation of multiple objects"""
+        template = """<div style="float: left; padding: 10px;">
+        <p style='font-family:"Courier New", Courier, monospace'>{0}</p>{1}
+        </div>"""
+        def __init__(self, *args):
+            self.args = args
+
+        def _repr_html_(self):
+            return '\n'.join(self.template.format(a, eval(a)._repr_html_())
+                            for a in self.args)
+
+        def __repr__(self):
+            return '\n\n'.join(a + '\n' + repr(eval(a))
+                               for a in self.args)
+               
+    merged_dfs = pd.merge(df_televia, df_scroll_order, how='inner', on='TAG')
+    cumple = (merged_dfs['Fecha'] >= merged_dfs['ord_startdate'] - pd.Timedelta(minutes=10)) & (merged_dfs['Fecha'] <= merged_dfs['ord_completiondate'] + pd.Timedelta(minutes=10))
+    merged_dfs[cumple]
+
+    cumplen = merged_dfs[cumple]
+    grouped_df = cumplen.groupby(cumplen['ord_number']).agg({
+        'Importe': ['sum'], 'TAG': 'max'
+    })
+
+    grouped_df = grouped_df.reset_index()
+
+    grouped_df.columns = ['_'.join(col).strip() if type(col) is tuple else col for col in grouped_df.columns.values]
+
+    grouped_df.columns = ['ord_number', 'IMPORTE TELEVIA', 'TAG']
+
+    merged_dfs2 = pd.merge(df_capufe, df_scroll_order, how='inner', on='TAG')
+    cumple2 = (merged_dfs2['FECHA Y HORA CRUCE'] >= merged_dfs2['ord_startdate'] - pd.Timedelta(minutes=10)) & (merged_dfs2['FECHA Y HORA CRUCE'] <= merged_dfs2['ord_completiondate'] + pd.Timedelta(minutes=10))
+    merged_dfs2[cumple2]
+
+    cumplen2 = merged_dfs2[cumple2]
+    grouped_df2 = cumplen2.groupby(cumplen2['ord_number']).agg({
+        'IMPORTE COBRADO': ['sum'], 'TAG': 'max'
+    })
+
+    grouped_df2 = grouped_df2.reset_index()
+
+    grouped_df2.columns = ['_'.join(col).strip() if type(col) is tuple else col for col in grouped_df2.columns.values]
+
+    grouped_df2.columns = ['ord_number', 'IMPORTE CAPUFE', 'TAG']
+
+    imp = pd.concat([grouped_df, grouped_df2], ignore_index=True)
+
+    Costos = pd.merge(imp, df_scroll_order, on="ord_number")
+    combinaciones = Costos.groupby(['origin_cty_nmstct', 'dest_cyt_nmstct']).size().reset_index(name='conteo')
+
+    Costos['origin_cty_nmstct'] = Costos['origin_cty_nmstct'].str.replace('MONTERREY,NX/', 'MONTERREY,NX')
+    Costos['dest_cyt_nmstct'] = Costos['dest_cyt_nmstct'].str.replace('MONTERREY,NX/', 'MONTERREY,NX')
+
+    df_rutas['origin_cty_nmstct'] = df_rutas['origin_cty_nmstct'].str.replace('Cuautitlan Izcalli', 'CUAUTITLAN IZCALLI,EM')
+    df_rutas['origin_cty_nmstct'] = df_rutas['origin_cty_nmstct'].str.replace('Gustavo A. Madero', 'GUSTAVO A. MADERO,DF/Mex')
+    df_rutas['origin_cty_nmstct'] = df_rutas['origin_cty_nmstct'].str.replace('Iztapalapa', 'IZTAPALAPA,DF')
+    df_rutas['origin_cty_nmstct'] = df_rutas['origin_cty_nmstct'].str.replace('Monterrey', 'MONTERREY,NX')
+    df_rutas['origin_cty_nmstct'] = df_rutas['origin_cty_nmstct'].str.replace('San Miguel Xoxtla', 'SAN MIGUEL XOXTLA,PU')
+    df_rutas['origin_cty_nmstct'] = df_rutas['origin_cty_nmstct'].str.replace('Zapotlanejo', 'ZAPOTLANEJO,JA/Mex')
+    df_rutas['origin_cty_nmstct'] = df_rutas['origin_cty_nmstct'].str.replace('Tonala', 'TONALA,JA')
+    df_rutas['origin_cty_nmstct'] = df_rutas['origin_cty_nmstct'].str.replace('Juarez', 'JUAREZ,NX')
+
+    df_rutas['dest_cyt_nmstct'] = df_rutas['dest_cyt_nmstct'].str.replace('Cuautitlan Izcalli', 'CUAUTITLAN IZCALLI,EM')
+    df_rutas['dest_cyt_nmstct'] = df_rutas['dest_cyt_nmstct'].str.replace('Gustavo A. Madero', 'GUSTAVO A. MADERO,DF/Mex')
+    df_rutas['dest_cyt_nmstct'] = df_rutas['dest_cyt_nmstct'].str.replace('Iztapalapa', 'IZTAPALAPA,DF')
+    df_rutas['dest_cyt_nmstct'] = df_rutas['dest_cyt_nmstct'].str.replace('Monterrey', 'MONTERREY,NX')
+    df_rutas['dest_cyt_nmstct'] = df_rutas['dest_cyt_nmstct'].str.replace('San Miguel Xoxtla', 'SAN MIGUEL XOXTLA,PU')
+    df_rutas['dest_cyt_nmstct'] = df_rutas['dest_cyt_nmstct'].str.replace('Zapotlanejo', 'ZAPOTLANEJO,JA/Mex')
+    df_rutas['dest_cyt_nmstct'] = df_rutas['dest_cyt_nmstct'].str.replace('Tonala', 'TONALA,JA')
+    df_rutas['dest_cyt_nmstct'] = df_rutas['dest_cyt_nmstct'].str.replace('Juarez', 'JUAREZ,NX')
+
+    ComparativaV2 = pd.merge(Costos, df_rutas, on=['origin_cty_nmstct', 'dest_cyt_nmstct'], how='inner')
+    ComparativaV2['IMPORTE TOTAL'] = ComparativaV2['IMPORTE TELEVIA'].fillna(0) + ComparativaV2['IMPORTE CAPUFE'].fillna(0)
+    ComparativaV2.drop(columns=['TAG_x', 'TAG_y', 'IMPORTE TELEVIA', 'IMPORTE CAPUFE', 'Column1', 'ord_revtype4', 'ord_totalcharge', 'origin_cty_nmstct', 'dest_cyt_nmstct', 'ord_totalmiles'], inplace=True)
+
+    ComparativaV2.rename(columns={'billto_cmp_id': 'Cliente'}, inplace=True)
+    ComparativaV2.rename(columns={'Costo total': 'Costo presupuestado (Global Maps)'}, inplace=True)
+    ComparativaV2.rename(columns={'IMPORTE TOTAL': 'Costo calculado'}, inplace=True)
+
+    tabla_fin = ComparativaV2[ComparativaV2['Ruta'] != 'San Miguel Xoxtla-Gustavo A. Madero']
+    tabla_fin= tabla_fin.reset_index(drop=True)
+    print(tabla_fin)
+

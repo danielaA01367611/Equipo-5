@@ -348,8 +348,172 @@ elif dashboard_mode == 'Tabla':
                 st.write(f'No se encontraron resultados para el Número de Camión: {tractor_number}')
 
 elif dashboard_mode == 'Gráficos':
-    st.markdown("<h1 style='font-weight: bold;'>Gráficos 📁</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='font-weight: bold;'>Gráficos 📊</h1>", unsafe_allow_html=True)
     st.markdown("---")
 
-    st.header('Dataframe final:')
-    st.write(df_project)
+        #Códigos para gráficas
+    caputag =  (st.session_state.get('capufe'))
+    teletag = (st.session_state.get('televia'))
+
+    teletag['Fecha'] = pd.to_datetime(teletag['Fecha'], format='%d-%m-%Y %H:%M:%S')
+    caputag['FECHA Y HORA CRUCE'] = pd.to_datetime(caputag['FECHA Y HORA CRUCE'], format='%d/%m/%Y %H:%M')
+
+    tagss = pd.concat([caputag, teletag], ignore_index=True)
+
+    tagss['IMPORTE TOTAL'] = tagss['IMPORTE COBRADO'].fillna(0) + tagss['Importe'].fillna(0)
+
+    tagss['Fechas'] = tagss['FECHA Y HORA CRUCE'].combine_first(tagss['Fecha'])
+
+    tags = tagss.drop(columns=['IMPORTE COBRADO', 'Importe'])
+
+    tags = tagss.drop(columns=['FECHA Y HORA CRUCE', 'Fecha'])
+
+    fechatag = tags[['TAG', 'IMPORTE TOTAL', 'Fechas']]
+
+    df_cu = (st.session_state.get('project'))
+
+    df_cu= df_cu[['Unidad', 'TAG']]
+
+    fechatag = pd.merge(fechatag, df_cu, how='inner', on='TAG')
+    fechatag = fechatag.drop_duplicates()
+    fechatag = fechatag.reset_index(drop=True)
+
+
+    fechatagsum = fechatag.groupby('Unidad')['IMPORTE TOTAL'].sum().reset_index()
+
+    fechatagsum['Unidad'] = fechatagsum['Unidad'].astype(str)
+
+    df = pd.read_excel('tabla_fin.xlsx')
+
+    df['Unidad'] = df['Unidad'].astype(str)
+
+
+    # Contenido del apartado 'Gráficos'
+    st.markdown("<h1 style='font-weight: bold;'>Gráficos Generales TDR</h1>", unsafe_allow_html=True)
+    st.markdown("---")
+
+    costo_calculado_total = df['Costo calculado'].sum()
+    costo_presupuestado_total = df['Costo presupuestado (Global Maps)'].sum()
+
+    # Mostrar los resultados en dos cajas en la parte superior
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.metric(label="Costo Calculado Total", value=f"${costo_calculado_total:,.2f}")
+
+    with col2:
+        st.metric(label="Costo Presupuestado Total (Global Maps)", value=f"${costo_presupuestado_total:,.2f}")
+
+    chart1, chart2 = st.columns(2)
+    with chart1:
+
+        bar = alt.Chart(fechatagsum).mark_bar().encode(
+            x='Unidad',
+            y=alt.Y('IMPORTE TOTAL'),
+            color=alt.condition(
+                alt.datum['IMPORTE TOTAL'] == max(fechatagsum['IMPORTE TOTAL']),
+                alt.value('#ff0000'),
+                alt.value('lightgrey'))  # Condición, ValorVerdadero, ValorFalso
+        ).transform_window(
+            max_importe='max(IMPORTE TOTAL)'
+        ).properties(
+            title='Tag con mayor gasto del mes')
+
+        st.altair_chart(bar, use_container_width= True)
+
+    with chart2:
+        fechatagsum
+
+    palette = [
+        "#005D7E",
+        "#008995",
+        "#00B492",
+        "#89DB7E",
+        "#F9F871",
+        "#496185",
+        "#DEF2FF",
+        "#DCA11C",
+        "#00C6BA",
+        "#FFF7D6",
+        "#D7F4F0"]
+
+    # Crear la escala de colores personalizada
+    color_scale = alt.Scale(domain=list(df['Ruta'].unique()), range=palette[:len(df['Ruta'].unique())])
+
+
+    boxplot1 = alt.Chart(df).mark_bar().encode(
+        y='Ruta',
+        x='Costo calculado',
+        color = alt.Color('Ruta', scale=color_scale)).properties(
+        title='Costo calculado por ruta')
+
+    boxplot2 = alt.Chart(df).mark_bar().encode(
+        y='Ruta',
+        x='Costo presupuestado (Global Maps)',
+        color = 'Ruta').properties(
+        title='Costo presupuestado por ruta según Global Maps')
+
+    boxplot1 & boxplot2
+
+    # Contenido del apartado 'Gráficos detallados'
+    st.markdown("<h1 style='font-weight: bold;'>Gráficos Gráficos detallados TDR</h1>", unsafe_allow_html=True)
+    st.markdown("---")
+
+    fechatag['Unidad'] = fechatag['Unidad'].astype(str)
+
+    palette = ['#0e131c', '#132031', '#162c47', '#264061', '#435c7f',
+                '#61799e', '#8097be', '#163355', '#181655', '#165355']
+
+    # Crear la escala de colores personalizada
+    color_scale = alt.Scale(domain=list(fechatag['Unidad'].unique()), range=palette[:len(fechatag['Unidad'].unique())])
+
+    click=alt.selection_multi(encodings=['color'])
+    barra1 = alt.Chart(fechatag).mark_bar().encode(
+        x='Unidad',
+        y='max(IMPORTE TOTAL)',
+        color=alt.condition(click,'Unidad', alt.value('lightgray'), scale=color_scale)
+        ).add_selection(click).properties(
+        title='Registro de el pago más alto por No. de Unidad')
+
+    linea1=alt.Chart(fechatag).mark_line().encode(
+        x='Fechas',
+        y='IMPORTE TOTAL',
+        color='Unidad').properties(
+        width=700).transform_filter(click).properties(
+        title='Registro de pagos por fecha')
+
+    barra1 | linea1
+
+    palette = [
+        "#005D7E",
+        "#008995",
+        "#00B492",
+        "#89DB7E",
+        "#F9F871",
+        "#496185",
+        "#DEF2FF",
+        "#DCA11C",
+        "#00C6BA",
+        "#FFF7D6",
+        "#D7F4F0"]
+
+    click=alt.selection_multi(encodings=['color']) # 1
+
+    color_scale = alt.Scale(domain=list(df['Ruta'].unique()), range=palette[:len(df['Ruta'].unique())])
+
+    barra1_1=alt.Chart(df).mark_bar().encode(
+        x='Costo calculado',
+        y='Ruta',
+        color=alt.condition(click,'Ruta', alt.value('lightgray'), scale=color_scale)
+        ).add_selection(click).properties(
+            title='Costo calculado por ruta')
+
+    # graf secundaria
+    barra1_2=alt.Chart(df).mark_bar().encode(
+        x='Costo calculado',
+        y='Unidad',
+        color='Costo calculado'
+        ).transform_filter(click).properties(
+            title='Registro de cobras por ruta')
+
+    barra1_1&barra1_2

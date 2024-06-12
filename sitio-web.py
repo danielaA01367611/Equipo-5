@@ -8,7 +8,9 @@ import numpy as np
 import altair as alt
 import folium
 from streamlit_folium import folium_static
-
+import requests
+from streamlit_lottie import st_lottie
+    
 # Función para recortar la imagen
 def crop_image(image_path, crop_box):
     image = Image.open(image_path)
@@ -22,7 +24,7 @@ dashboard_mode = st.sidebar.selectbox("**Selecciona una pestaña:**", ['Inicio',
 
 # Función para cargar y procesar archivos
 if dashboard_mode == "Carga":
-    st.title(":bar_chart: Menú de carga")
+    st.title("📥 Menú de carga")
     st.divider()
     st.header("Dataframes")
     # Opción para subir archivos
@@ -67,36 +69,37 @@ if dashboard_mode == 'Inicio':
         crop_box = (50, 300, 800, 500)  # Ajusta estos valores según sea necesario (left, upper, right, lower)
         header_image = crop_image(header_image_path, crop_box)
         st.image(header_image, use_column_width=True)
-        st.title('TDR transportes: PORTAL DE PAGO DE CASETAS 🚚')
+        st.title('TDR transportes: PORTAL DE PAGO DE CASETAS')
         st.header('La grandeza de TDR es gracias a la grandeza de su gente')
         st.write('Somos TDR, trabajando siempre en la creación e implementación de soluciones integrales de transporte, rentables, eficientes e innovadoras.')
         st.write('[Saber más >](https://www.tdr.com.mx/index.html)')
         
     with st.container():
         st.write('---')
-        text_column, animation_column = st.columns(2)
+        text_column, image_column = st.columns(2)
         with text_column:
             st.header('¿Qué puedes hacer en este portal? 🔍')
             st.write(
                 """
-                El objetivo de este portal es corroborar el costo acumulado de casetas según el número de orden.
-                Aquí puedes visualizar: 
+                El objetivo de este portal es verificar el costo acumulado de casetas según el número de orden.
+                Aquí puedes visualizar:
+                
+                - **Fechas de inicio y fin de las órdenes:** Consulta las fechas clave de tus órdenes de transporte.
 
-                - Fechas de inicio y fin de las ordenes
+                - **Ciudad de origen y ciudad destino de las órdenes:** Identifica los puntos de partida y destino de cada orden.
 
-                - Ciudad de origen y ciudad destino de las ordenes
+                - **Número del camión que completó la orden:** Verifica cuál camión fue asignado a cada orden.
 
-                - Número de camión que completó la orden
+                - **Total acumulado pagado en casetas por orden:** Revisa el costo total de casetas por cada orden específica.
 
-                - Total acumulado pagado en casetas por orden
+                - **Presupuesto del pago total de casetas por ruta:** Compara los costos reales con los presupuestos previstos para cada ruta.
 
-                - Presupuesto del pago total de casetas por ruta
-
-                - Gráficos y apoyos visuales de los datos
+                - **Gráficos y apoyos visuales de los datos:** Visualiza la información de manera gráfica para facilitar su comprensión.
                 """
             )
-        with animation_column:
-            st.empty()
+        with image_column:
+            st.image('imagenes/TDR1.jpeg', use_column_width=True)
+
        
     with st.container():
         st.write('---')
@@ -108,16 +111,18 @@ if dashboard_mode == 'Inicio':
         st.write('')
         image_column, text_column = st.columns((2, 1))
         with image_column:
-            image = Image.open('imagenes/tabla.png')
+            image = Image.open('imagenes/df.png')
             st.image(image, use_column_width=True)
         with text_column:
-            st.subheader('Dataframe registro de ordenes')
+            st.subheader('Dataframe registro de ordenes 🧾')
             st.write(
                 """
                 En el siguiente apartado podrás visualizar en detalle cada orden,
-                incluyendo su fecha de inicio y finalización, lugar de partida y destino (la ruta completa),
-                número del camión que realizó la orden, etiqueta registrada en la caseta,
-                proveedor, monto total pagado y monto total presupuestado.
+                  incluyendo su fecha de inicio y finalización, lugar de partida
+                    y destino (la ruta completa), número del camión que realizó la orden,
+                      etiqueta registrada en la caseta, proveedor, monto total pagado y 
+                      monto total presupuestado.
+
                 """
             )
     with st.container():
@@ -125,16 +130,16 @@ if dashboard_mode == 'Inicio':
         st.write('')
         image_column, text_column = st.columns((2, 1))
         with image_column:
-            image = Image.open('imagenes/ej.graf.png')
+            image = Image.open('imagenes/grafs.png')
             st.image(image, use_column_width=True)
         with text_column:
-            st.subheader('Gráficos')
+            st.subheader('Gráficos 📊')
             st.write(
                 """
-                En este apartado puedes visualizar gráficos que muestran los resultados del mes de operaciones de TDR.
-                Estos gráficos facilitan la identificación visual de casos extraordinarios,
-                permitiendo analizar qué ocurrió, cómo solucionarlo y,
-                sobre todo, cómo prevenir que vuelva a suceder.
+                En este apartado, puedes visualizar gráficos que muestran los resultados
+                  mensuales de las operaciones de TDR. Estos gráficos facilitan la 
+                  identificación visual de casos extraordinarios, permitiendo analizar qué ocurrió,
+                    cómo solucionarlo y, sobre todo, cómo prevenir que vuelva a suceder.
                 """
             )
 
@@ -146,13 +151,12 @@ if dashboard_mode == 'Inicio':
             image = Image.open('imagenes/graficas.png')
             st.image(image, use_column_width=True)
         with text_column:
-            st.subheader('Gráficos detallados')
+            st.subheader('Gráficos detallados 📈')
             st.write(
                 """
-                En este apartado puedes visualizar gráficos mucho más detallados,
-                con los que se pueden encontrar detalles más específicos de las órdenes
-                según la fecha de inicio y finalización de estas, o según el total gastado
-                por número decamión.
+                En este apartado, puedes visualizar gráficos mucho más detallados,
+                  que permiten encontrar detalles específicos de las órdenes según
+                    su fecha de inicio y finalización, o según el total gastado por número de camión.
                 """
             )
 
@@ -161,15 +165,13 @@ if dashboard_mode == 'Inicio':
         st.write('')
         image_column, text_column = st.columns((2, 1))
         with image_column:
-            image = Image.open('imagenes/ruta.png')
+            image = Image.open('imagenes/rutas.png')
             st.image(image, use_column_width=True)
         with text_column:
-            st.subheader('Rutas')
+            st.subheader('Rutas 🗺')
             st.write(
                 """
-                En este apartado puedes visualizar a detalle las rutas que se tuvieron que seguir,
-                el costo de cada una en Global Map, así como visualizarlas
-                en un mapa.
+                 En este apartado, puedes visualizar en detalle las rutas que se siguieron representadas en un mapa.
                 """
             )
 if 'Pre-procesamiento' not in st.session_state:
@@ -524,40 +526,39 @@ elif dashboard_mode == 'Gráficos':
 
 elif dashboard_mode == 'Rutas':
     def add_marker(map_object, lat, lon, popup_text, marker_color='blue'):
-    folium.Marker(
-        location=[lat, lon],
-        popup=popup_text,
-        icon=folium.Icon(color=marker_color)
-    ).add_to(map_object)
+        folium.Marker(
+            location=[lat, lon],
+            popup=popup_text,
+            icon=folium.Icon(color=marker_color)
+        ).add_to(map_object)
+        
+    def add_polyline(map_object, locations, color='blue'):
+        folium.PolyLine(locations, color=color, weight=2.5, opacity=1).add_to(map_object)
 
-# Se añade la funcion que generara las lineas poligeometricas al mapa, uniendo los puntos
-def add_polyline(map_object, locations, color='blue'):
-    folium.PolyLine(locations, color=color, weight=2.5, opacity=1).add_to(map_object)
 
-# Se añadió una función para limpiar las columnas de latitud y longitud evitando así errores durante la ejecución del programa
-def clean_coordinates(df, columns):
-    for col in columns:
-        df[col] = df[col].astype(str).str.replace(r'[^\d.-]', '', regex=True)
-        df[col] = pd.to_numeric(df[col], errors='coerce')
-    return df
+    def clean_coordinates(df, columns):
+            for col in columns:
+                df[col] = df[col].astype(str).str.replace(r'[^\d.-]', '', regex=True)
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+            return df
 
 # SE ejecuta la app de streamlit
-st.title("Rutas y Casetas")
+    st.title("Rutas y casetas en el mapa 🗺")
 
 # Botón para subir archivos excel o csv,con sus respectivas leyendas
-uploaded_file = st.file_uploader("Sube tu archivo de Excel o CSV", type=["xlsx", "csv"])
+    uploaded_file = st.file_uploader("Sube tu archivo de Excel o CSV", type=["xlsx", "csv"])
 
-if uploaded_file:
-    st.write("Asegúrese de que su archivo contenga las coordenadas correctas.")
-    if st.button("Revisado"):
-        # Se determina el tipo de archivo y se lee la data
-        if uploaded_file.name.endswith('.xlsx'):
-            df = pd.read_excel(uploaded_file, sheet_name='Hoja1')
-        elif uploaded_file.name.endswith('.csv'):
-            df = pd.read_csv(uploaded_file)
+    if uploaded_file:
+        st.write("Asegúrese de que su archivo contenga las coordenadas correctas.")
+        if st.button("Procesar archivo"):
+            # Se determina el tipo de archivo y se lee la data
+            if uploaded_file.name.endswith('.xlsx'):
+                df = pd.read_excel(uploaded_file, sheet_name='Hoja1')
+            elif uploaded_file.name.endswith('.csv'):
+                df = pd.read_csv(uploaded_file)
 
         # Se extraen las columnas limpias de latitud y longitud de las variables: origen, destino y casetas
-        df = clean_coordinates(df, ['latitudO', 'longitudO', 'latitudD', 'longitudD', 'latitudC', 'longitudC'])
+                df = clean_coordinates(df, ['latitudO', 'longitudO', 'latitudD', 'longitudD', 'latitudC', 'longitudC'])
 
         # Se despliega el dataframe para su previa visualización
         st.dataframe(df)

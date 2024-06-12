@@ -383,7 +383,7 @@ elif dashboard_mode == 'Gráficos':
 
     fechatagsum['Unidad'] = fechatagsum['Unidad'].astype(str)
 
-    df = pd.read_excel('tabla_fin.xlsx')
+    df = tabla_fin
 
     df['Unidad'] = df['Unidad'].astype(str)
 

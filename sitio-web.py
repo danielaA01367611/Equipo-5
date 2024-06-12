@@ -5,6 +5,9 @@ from io import StringIO
 import plotly.express as px
 from datetime import datetime
 import numpy as np
+import altair as alt
+import folium
+from streamlit_folium import folium_static
 
 # Función para recortar la imagen
 def crop_image(image_path, crop_box):
@@ -317,6 +320,7 @@ elif dashboard_mode == 'Tabla':
     tabla_fin= tabla_fin.reset_index(drop=True)
     st.header("Resultado final:")
     st.dataframe(tabla_fin)
+    st.session_state['tabla_fin']=tabla_fin
 
     st.markdown("<h1 style='font-weight: bold;'>Búsqueda por número de orden o por unidad 🔍</h1>", unsafe_allow_html=True)
     st.markdown("---")
@@ -383,7 +387,7 @@ elif dashboard_mode == 'Gráficos':
 
     fechatagsum['Unidad'] = fechatagsum['Unidad'].astype(str)
 
-    df = tabla_fin
+    df=(st.session_state.get('tabla_fin'))
 
     df['Unidad'] = df['Unidad'].astype(str)
 
@@ -517,3 +521,75 @@ elif dashboard_mode == 'Gráficos':
             title='Registro de cobras por ruta')
 
     barra1_1&barra1_2
+
+elif dashboard_mode == 'Rutas':
+    def add_marker(map_object, lat, lon, popup_text, marker_color='blue'):
+    folium.Marker(
+        location=[lat, lon],
+        popup=popup_text,
+        icon=folium.Icon(color=marker_color)
+    ).add_to(map_object)
+
+# Se añade la funcion que generara las lineas poligeometricas al mapa, uniendo los puntos
+def add_polyline(map_object, locations, color='blue'):
+    folium.PolyLine(locations, color=color, weight=2.5, opacity=1).add_to(map_object)
+
+# Se añadió una función para limpiar las columnas de latitud y longitud evitando así errores durante la ejecución del programa
+def clean_coordinates(df, columns):
+    for col in columns:
+        df[col] = df[col].astype(str).str.replace(r'[^\d.-]', '', regex=True)
+        df[col] = pd.to_numeric(df[col], errors='coerce')
+    return df
+
+# SE ejecuta la app de streamlit
+st.title("Rutas y Casetas")
+
+# Botón para subir archivos excel o csv,con sus respectivas leyendas
+uploaded_file = st.file_uploader("Sube tu archivo de Excel o CSV", type=["xlsx", "csv"])
+
+if uploaded_file:
+    st.write("Asegúrese de que su archivo contenga las coordenadas correctas.")
+    if st.button("Revisado"):
+        # Se determina el tipo de archivo y se lee la data
+        if uploaded_file.name.endswith('.xlsx'):
+            df = pd.read_excel(uploaded_file, sheet_name='Hoja1')
+        elif uploaded_file.name.endswith('.csv'):
+            df = pd.read_csv(uploaded_file)
+
+        # Se extraen las columnas limpias de latitud y longitud de las variables: origen, destino y casetas
+        df = clean_coordinates(df, ['latitudO', 'longitudO', 'latitudD', 'longitudD', 'latitudC', 'longitudC'])
+
+        # Se despliega el dataframe para su previa visualización
+        st.dataframe(df)
+
+        # Se crea el mapa inicial con México centralizado
+        m = folium.Map(location=[23.6345, -102.5528], zoom_start=5)
+
+        # Iteración de  markups por destino, origen y casetas
+        for ruta in df['Ruta'].unique():
+            route_data = df[df['Ruta'] == ruta]
+
+            if len(route_data) > 0:
+                locations = []
+
+                # Se agregan los marcadores de destino y origen  para el mapa
+                for index, row in route_data.iterrows():
+                    if not pd.isna(row['latitudO']) and not pd.isna(row['longitudO']):
+                        add_marker(m, row['latitudO'], row['longitudO'], f"Inicio: {row['origin_cty_nmstct']}", 'green')
+                        locations.append((row['latitudO'], row['longitudO']))
+                    if not pd.isna(row['latitudD']) and not pd.isna(row['longitudD']):
+                        add_marker(m, row['latitudD'], row['longitudD'], f"Fin: {row['dest_cty_nmstct']}", 'red')
+                        locations.append((row['latitudD'], row['longitudD']))
+
+                # Añade los marcadores de peaje y los incluye en la polilínea
+                for index, row in route_data.iterrows():
+                    if not pd.isna(row['latitudC']) and not pd.isna(row['longitudC']):
+                        add_marker(m, row['latitudC'], row['longitudC'], f"Caseta: {row['Casetas']}", 'blue')
+                        locations.append((row['latitudC'], row['longitudC']))
+
+                # Añade la polilínea para marcar / generar la ruta.
+                if locations:
+                    add_polyline(m, locations)
+
+        # Despliegue del mapa en la app de streamlit
+        folium_static(m)

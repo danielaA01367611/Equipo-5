@@ -2,7 +2,7 @@ import streamlit as st
 from PIL import Image
 import pandas as pd
 from io import StringIO
-import plotly.express as px
+#import plotly.express as px
 from datetime import datetime
 import numpy as np
 import altair as alt

@@ -309,32 +309,43 @@ elif dashboard_mode == 'Tabla':
     ComparativaV2.rename(columns={'billto_cmp_id': 'Cliente'}, inplace=True)
     ComparativaV2.rename(columns={'Costo total': 'Costo presupuestado (Global Maps)'}, inplace=True)
     ComparativaV2.rename(columns={'IMPORTE TOTAL': 'Costo calculado'}, inplace=True)
+    ComparativaV2.rename(columns={'ord_number': 'Núm. de orden'}, inplace=True)
+    ComparativaV2.rename(columns={'ord_startdate': 'Fecha inicio'}, inplace=True)
+    ComparativaV2.rename(columns={'ord_completiondate': 'Fecha final'}, inplace=True)
 
     tabla_fin = ComparativaV2[ComparativaV2['Ruta'] != 'San Miguel Xoxtla-Gustavo A. Madero']
     tabla_fin= tabla_fin.reset_index(drop=True)
-    st.write("Resultado final:")
+    st.header("Resultado final:")
     st.dataframe(tabla_fin)
-    
-    st.markdown("<h1 style='font-weight: bold;'>Tabla de ordenes mensuales por proyecto 📋</h1>", unsafe_allow_html=True)
+
+    st.markdown("<h1 style='font-weight: bold;'>Búsqueda por número de orden o por unidad 🔍</h1>", unsafe_allow_html=True)
     st.markdown("---")
     search_option = st.selectbox(
         'Seleccione el tipo de búsqueda:',
         ('Número de Orden', 'Número de Camión')
-    )
+    )   
 
     if search_option == 'Número de Orden':
-        order_number = st.text_input('Ingrese el Número de Orden:')
+        order_number = st.number_input('Ingrese el Número de Orden:')
         if st.button('Buscar por Número de Orden'):
             # Lógica de búsqueda por número de orden
-            st.write(f'Resultados para el Número de Orden: {order_number}')
-            # Aquí puedes agregar el código para buscar y mostrar los resultados
+            results = tabla_fin[tabla_fin['Núm. de orden'] == order_number]
+            if not results.empty:
+                st.write(f'Resultados para el Número de Orden: {order_number}')
+                st.dataframe(results)
+            else:
+                st.write(f'No se encontraron resultados para el Número de Orden: {order_number}')
 
     elif search_option == 'Número de Camión':
-        tractor_number = st.text_input('Ingrese el Número de Camión:')
+        tractor_number = st.number_input('Ingrese el Número de Camión:')
         if st.button('Buscar por Número de Camión'):
-                # Lógica de búsqueda por número de tractor
+            # Lógica de búsqueda por número de tractor
+            results = tabla_fin[tabla_fin['Unidad'] == tractor_number]
+            if not results.empty:
                 st.write(f'Resultados para el Número de Camión: {tractor_number}')
-                # Aquí puedes agregar el código para buscar y mostrar los resultados
+                st.dataframe(results)
+            else:
+                st.write(f'No se encontraron resultados para el Número de Camión: {tractor_number}')
 
 elif dashboard_mode == 'Gráficos':
     st.markdown("<h1 style='font-weight: bold;'>Gráficos 📁</h1>", unsafe_allow_html=True)

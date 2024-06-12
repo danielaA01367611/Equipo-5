@@ -6,7 +6,7 @@ from io import StringIO
 from datetime import datetime
 import numpy as np
 import altair as alt
-import folium
+#import folium
 from streamlit_folium import folium_static
 import requests
 from streamlit_lottie import st_lottie
